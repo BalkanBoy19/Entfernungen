@@ -4,8 +4,10 @@ import math
 import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk
+import os
 
-file = "/Users/nedimdrekovic/Python/DB/simplemaps_worldcities/worldcities.csv"
+file = str(os.path.realpath(__file__))
+file = "/Users/nedimdrekovic/Python/DB/simplemaps_worldcities/Entfernungen.py"
 backgroundFile = "/Users/nedimdrekovic/Python/DB/simplemaps_worldcities/Erde.jpg"
 
 # eigentlich eher dumm geloest, aber es reicht fuers erste
