@@ -9,6 +9,7 @@ import os
 #file = str(os.path.realpath(__file__))
 file = "/Users/nedimdrekovic/Python/DB/simplemaps_worldcities/" + "worldcities.csv"
 backgroundFile = "/Users/nedimdrekovic/Python/DB/simplemaps_worldcities/Erde.jpg"
+backgroundColor = "DeepSkyBlue3"
 
 # eigentlich eher dumm geloest, aber es reicht fuers erste
 doppeltesBorrow = False # um zu checken ob borrow doppelt vorhanden
@@ -59,8 +60,8 @@ def entfernung():
     latitude2 = df.loc[index2, "lat"]
     longitude2 = df.loc[index2, "lng"]
 
-    print("\n(Längengrad/Breitengrad) von", city1 + ("(" + df.loc[df.index[index1], "admin_name"] + ")" if doppeltesBorrow else "") + ": (" + str(longitude1) + u'\N{DEGREE SIGN}/' + str(latitude1) + u'\N{DEGREE SIGN}' + ")")
-    print("(Längengrad/Breitengrad) von", city2 + ("(" + df.loc[df.index[index2], "admin_name"] + ")" if doppeltesBorrow else "") + ": (" + str(longitude2) + u'\N{DEGREE SIGN}/' + str(latitude2) + u'\N{DEGREE SIGN}' + ")")
+#    print("\n(Längengrad/Breitengrad) von", city1 + ("(" + df.loc[df.index[index1], "admin_name"] + ")" if doppeltesBorrow else "") + ": (" + str(longitude1) + u'\N{DEGREE SIGN}/' + str(latitude1) + u'\N{DEGREE SIGN}' + ")")
+#    print("(Längengrad/Breitengrad) von", city2 + ("(" + df.loc[df.index[index2], "admin_name"] + ")" if doppeltesBorrow else "") + ": (" + str(longitude2) + u'\N{DEGREE SIGN}/' + str(latitude2) + u'\N{DEGREE SIGN}' + ")")
     durchmesser = 12756.27
     radius = durchmesser / 2
 
@@ -78,11 +79,15 @@ def entfernung():
     l1_text = ("(" + df.loc[df.index[index1], "admin_name"] + ")" if doppeltesBorrow else "") + "(" + str(round(longitude1, digits_after_point)) + u'\N{DEGREE SIGN}/' + str(round(latitude1, digits_after_point)) + u'\N{DEGREE SIGN}' + ")"
     l2_text = ("(" + df.loc[df.index[index2], "admin_name"] + ")" if doppeltesBorrow else "") + "(" + str(round(longitude2, digits_after_point)) + u'\N{DEGREE SIGN}/' + str(round(latitude2, digits_after_point)) + u'\N{DEGREE SIGN}' + ")"
 
-    l1 = tk.Label(tkFenster, text=l1_text).grid(row=3, column=0, padx=10, pady=10)
-    l2 = tk.Label(tkFenster, text=l2_text).grid(row=3, column=1, padx=10, pady=10)
+    l1 = tk.Label(tkFenster, text=l1_text).grid(row=2, column=3)
+    l2 = tk.Label(tkFenster, text=l2_text).grid(row=3, column=3)
 
-    resultText = str(round(distance, digits_after_point)) + " km"
-    result = tk.Label(tkFenster, text=resultText, bg="red", fg="white").grid(row=2, column=3)
+    lb1 = tk.Label(tkFenster, text="(Längengrad/Breitengrad) von " + combo1.get() + " =", bg="blue", fg="orange").grid(row=2, column=2, pady=3)
+    lb2 = tk.Label(tkFenster, text="(Längengrad/Breitengrad) von " + combo2.get() + " =", bg="blue", fg="orange").grid(row=3, column=2, pady=3)
+    entf = tk.Label(tkFenster, text="Entfernung zwischen \"" + combo1.get() + "\" und \"" + combo1.get() + "\" = ", bg="yellow", fg="dark green").grid(row=4, column=2, padx=10, pady=10)
+
+    resultText = str(round(distance, digits_after_point)).replace(".", ",") + " km"
+    result = tk.Label(tkFenster, text=resultText, bg="red", fg="white").grid(row=4, column=3)
 
     print("Entfernung zwischen",city1,"und",city2,":",distance,"\n")
 
@@ -93,11 +98,8 @@ if __name__ == '__main__':
     tkFenster = tk.Tk()
     # Den Fenstertitle erstellen
     tkFenster.title("Entfernung zweier Städte (Luftlinie)")
-    tkFenster.geometry("1200x300")
-    tkFenster.configure(background='coral1')
-
-    label1 = tk.Label(tkFenster, text="1.Stadt", bg="red", fg="white").grid(row=0, column=0, padx=10, pady=10)
-    label2 = tk.Label(tkFenster, text="2.Stadt", bg="green", fg="black").grid(row=0, column=1, padx=10, pady=10)
+    tkFenster.geometry("900x200")
+    tkFenster.configure(background=backgroundColor)
 
 #    single_cities = [city for city in df["city"] if df["city"].tolist().count(city) == 1]
 #    double_cities = sorted(list(set(df["city"].tolist()) - set(single_cities)))
@@ -113,17 +115,17 @@ if __name__ == '__main__':
 
     combo1 = ttk.Combobox(tkFenster, state="readonly", values=combo1_cities)
     combo2 = ttk.Combobox(tkFenster, state="readonly", values=combo1_cities)
-    combo1.grid(column=0, row=1)
-    combo2.grid(column=1, row=1)
+    combo1.grid(column=0, row=1, padx=5)
+    combo2.grid(column=1, row=1, padx=5)
     combo1.current(1)
     combo2.current(1)
 
-    lb1 = tk.Label(tkFenster, text="(Längengrad/Breitengrad) von " + combo1.get() + ":", bg="blue", fg="orange").grid(row=2, column=0, padx=10, pady=10)
-    lb2 = tk.Label(tkFenster, text="(Längengrad/Breitengrad) von " + combo2.get() + ":", bg="blue", fg="orange").grid(row=2, column=1, padx=10, pady=10)
-    entf = tk.Label(tkFenster, text="Entfernung zwischen " + combo1.get() + " und " + combo1.get() + " = ", bg="yellow", fg="dark green").grid(row=2, column=2, padx=10, pady=10)
+    label1 = tk.Label(tkFenster, text="1.Stadt", bg="red", fg="white").grid(row=0, column=0, padx=3)
+    label2 = tk.Label(tkFenster, text="2.Stadt", bg="green", fg="black").grid(row=0, column=1, padx=3)
+#    label1.config(width=20)
+#    label2.config(width=20)
 
-    berechne = ttk.Button(tkFenster, text="Berechne die Entfernung der beiden Städte", command=entfernung)
-    berechne.grid(row=1, column=2)
+    berechne = ttk.Button(tkFenster, text="Berechne die Entfernung der beiden Städte", command=entfernung).grid(row=1, column=2)
 
     # In der Ereignisschleife auf Eingabe des Benutzers warten.
     tkFenster.mainloop()
