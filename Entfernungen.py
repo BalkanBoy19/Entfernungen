@@ -33,24 +33,16 @@ def getCity(city):
     res = city.split(" (")
 
     if len(res) > 1:    # d.h. wenn Stadt mehrmals vorhanden, zB in versch. Ländern
-
         countrys = df[df["city"] == res[0]]["country"]
-
         # damit kein falsches Land eingeben wird, also nur das, was zur Auswahl steht
         while True:
-            #country = input("Die Stadt " + city + " gibt es mehrmals auf der Welt. Wähle eines der folgendne Länder aus (" + res + "): ")
-            #country =
             res2 = res[1].split(", ")
             res2[-1] = res2[-1][:-1]  # um ")" zu entfernen
             # falls 2 Städte mit dem gleichen Namen sogar im gleichen Land sind
             if len(res2) > 1:
                 doppeltesBorrow = True
-                print("Res",res2)
-                print("Auflisten:",df[(df["country"] == res2[0]) & (df["admin_name"] == res2[1])])
                 return df[(df["country"] == res2[0]) & (df["city"] == res[0]) & (df["admin_name"] == res2[1])].index[0]
-#                while True:
-#                    return df[(df["country"] == country) & (df["city"] == city) & (df["admin_name"] == borrows)].index[0]
-            # damit auch wirklich eines der Länder ausgewaehlt wird
+            # falls die beiden Städte in versch. Länder sind.
             return df[(df["country"] == res2[0]) & (df["city"] == res[0])].index[0]
     # falls es die Stadt nur einmal auf der Welt gibt
     return df[df["city"] == res[0]].index[0]
@@ -59,17 +51,14 @@ def getCity(city):
 def entfernung():
     city1 = combo1.get()
     city2 = combo2.get()
-    print("city1",city1)
-    print("city2",city2)
+
     index1 = getCity(city1)
     latitude1 = df.loc[index1, "lat"]
     longitude1 = df.loc[index1, "lng"]
-
     index2 = getCity(city2)
     latitude2 = df.loc[index2, "lat"]
     longitude2 = df.loc[index2, "lng"]
 
-    # evtl. noch Borrow in Klammern hinter Stadt einfuegen
     print("\n(Längengrad/Breitengrad) von", city1 + ("(" + df.loc[df.index[index1], "admin_name"] + ")" if doppeltesBorrow else "") + ": (" + str(longitude1) + u'\N{DEGREE SIGN}/' + str(latitude1) + u'\N{DEGREE SIGN}' + ")")
     print("(Längengrad/Breitengrad) von", city2 + ("(" + df.loc[df.index[index2], "admin_name"] + ")" if doppeltesBorrow else "") + ": (" + str(longitude2) + u'\N{DEGREE SIGN}/' + str(latitude2) + u'\N{DEGREE SIGN}' + ")")
     durchmesser = 12756.27
@@ -86,37 +75,41 @@ def entfernung():
     c = 2 * math.atan2(np.sqrt(a), np.sqrt(1 - a))
     distance = radius * c
 
-    l1_text = "(Längengrad/Breitengrad) von " + city1 + ("(" + df.loc[df.index[index1], "admin_name"] + ")" if doppeltesBorrow else "") + ":\n(" + str(round(longitude1, digits_after_point)) + u'\N{DEGREE SIGN}/' + str(round(latitude1, digits_after_point)) + u'\N{DEGREE SIGN}' + ")"
-    l2_text = "(Längengrad/Breitengrad) von " + city2 + ("(" + df.loc[df.index[index2], "admin_name"] + ")" if doppeltesBorrow else "") + ":\n(" + str(round(longitude2, digits_after_point)) + u'\N{DEGREE SIGN}/' + str(round(latitude2, digits_after_point)) + u'\N{DEGREE SIGN}' + ")"
+    l1_text = ("(" + df.loc[df.index[index1], "admin_name"] + ")" if doppeltesBorrow else "") + "(" + str(round(longitude1, digits_after_point)) + u'\N{DEGREE SIGN}/' + str(round(latitude1, digits_after_point)) + u'\N{DEGREE SIGN}' + ")"
+    l2_text = ("(" + df.loc[df.index[index2], "admin_name"] + ")" if doppeltesBorrow else "") + "(" + str(round(longitude2, digits_after_point)) + u'\N{DEGREE SIGN}/' + str(round(latitude2, digits_after_point)) + u'\N{DEGREE SIGN}' + ")"
 
+    l1 = tk.Label(tkFenster, text=l1_text).grid(row=3, column=0, padx=10, pady=10)
+    l2 = tk.Label(tkFenster, text=l2_text).grid(row=3, column=1, padx=10, pady=10)
 
-    l1 = tk.Label(tkFenster, text=l1_text).grid(row=2, column=0, padx=10, pady=10)
-    l2 = tk.Label(tkFenster, text=l2_text).grid(row=2, column=1, padx=10, pady=10)
+    resultText = str(round(distance, digits_after_point)) + " km"
+    result = tk.Label(tkFenster, text=resultText, bg="red", fg="white").grid(row=2, column=3)
 
-    resulttext = "Entfernung zwischen " + city1 + " und " + city2 + ": " + str(round(distance, digits_after_point)) + " km"
-    result = tk.Label(tkFenster, text=resulttext).grid(row=2, column=2, padx=10, pady=10)
-
-    print("Entfernung zwischen",city1,"und",city2,":",distance)
-#    result.depositLabel['text'] = "Entfernung zwischen " + city1 + " und " + city2 + ": " + str(distance)
+    print("Entfernung zwischen",city1,"und",city2,":",distance,"\n")
 
 if __name__ == '__main__':
     df = pd.read_csv(file)
-    #city1 = isValid(1)
-    #city2 = isValid(2)
-    #entfernung(city1, city2)
 
     # Ein Fenster erstellen
     tkFenster = tk.Tk()
     # Den Fenstertitle erstellen
     tkFenster.title("Entfernung zweier Städte (Luftlinie)")
     tkFenster.geometry("1200x300")
-    tkFenster.configure(background='turquoise')
+    tkFenster.configure(background='coral1')
 
     label1 = tk.Label(tkFenster, text="1.Stadt", bg="red", fg="white").grid(row=0, column=0, padx=10, pady=10)
     label2 = tk.Label(tkFenster, text="2.Stadt", bg="green", fg="black").grid(row=0, column=1, padx=10, pady=10)
 
-    combo1_cities = [city for city in df["city"]]
+#    single_cities = [city for city in df["city"] if df["city"].tolist().count(city) == 1]
+#    double_cities = sorted(list(set(df["city"].tolist()) - set(single_cities)))
+    # und dann zusammenfügen zum Schluss
+
+    combo1_cities = df["city"].tolist()
     combo1_cities = [city if city not in (combo1_cities[:index] + combo1_cities[index+1:]) else (city + " (" + str(df.loc[index, "country"]) + ", " + str(df.loc[index, "admin_name"]) + ")") if (len(df[(df["city"] == city) & (df["country"] == df.iloc[index]["country"])]) >= 2) else (city + " (" + str(df.loc[index, "country"]) + ")") for index, city in enumerate(combo1_cities)] # wenn bis auf city das gleiche element enthalten ist
+
+#    combo1_cities = [city for city in df["city"]]
+#    combo1_cities = [city if city in (combo1_cities[:index] + combo1_cities[index+1:]) else city for index, city in enumerate(combo1_cities)] # wenn bis auf city das gleiche element enthalten ist
+#    +" ("+df.iloc[index]["country"]+")"
+#    combo1_cities = [(city + " (" + str(df.loc[index, "admin_name"]) + ")") if len(df[df["city"] == city]) > 1 else city for index, city in enumerate(combo1_cities)]
 
     combo1 = ttk.Combobox(tkFenster, state="readonly", values=combo1_cities)
     combo2 = ttk.Combobox(tkFenster, state="readonly", values=combo1_cities)
@@ -125,19 +118,22 @@ if __name__ == '__main__':
     combo1.current(1)
     combo2.current(1)
 
-    x = df["city"].tolist()
-    print(x)
+    lb1 = tk.Label(tkFenster, text="(Längengrad/Breitengrad) von " + combo1.get() + ":", bg="blue", fg="orange").grid(row=2, column=0, padx=10, pady=10)
+    lb2 = tk.Label(tkFenster, text="(Längengrad/Breitengrad) von " + combo2.get() + ":", bg="blue", fg="orange").grid(row=2, column=1, padx=10, pady=10)
+    entf = tk.Label(tkFenster, text="Entfernung zwischen " + combo1.get() + " und " + combo1.get() + " = ", bg="yellow", fg="dark green").grid(row=2, column=2, padx=10, pady=10)
 
     berechne = ttk.Button(tkFenster, text="Berechne die Entfernung der beiden Städte", command=entfernung)
     berechne.grid(row=1, column=2)
 
-    """ combo1_cities = [city for city in df["city"]]
-        combo1_cities = [city if city in (combo1_cities[:index] + combo1_cities[index+1:]) else city for index, city in enumerate(combo1_cities)] # wenn bis auf city das gleiche element enthalten ist
-        # +" ("+df.iloc[index]["country"]+")"
-        combo1_cities = [(city + " (" + str(df.loc[index, "admin_name"]) + ")") if len(df[df["city"] == city]) > 1 else city for index, city in enumerate(combo1_cities)]
-
-    """
-
     # In der Ereignisschleife auf Eingabe des Benutzers warten.
     tkFenster.mainloop()
 #
+""" for index, city in enumerate(double_cities):
+        if combo1_cities.count(city) == 1:  # Stadt existiert nur einmal
+            res.append(city)
+        else:
+            if city in df[(df["city"] == city) & (df["country"] == df.iloc[index]["country"])]:
+                res.append(city + " (" + str(df.loc[index, "country"]) + ")")
+            else:
+                res.append(city + " (" + str(df.loc[index, "country"]) + ", " + str(df.loc[index, "admin_name"]) + ")")
+"""
