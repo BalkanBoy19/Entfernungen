@@ -6,13 +6,15 @@ from tkinter import ttk
 from PIL import Image, ImageTk
 import os
 
-file = str(os.path.realpath(__file__))
-file = "/Users/nedimdrekovic/Python/DB/simplemaps_worldcities/Entfernungen.py"
+#file = str(os.path.realpath(__file__))
+file = "/Users/nedimdrekovic/Python/DB/simplemaps_worldcities/" + "worldcities.csv"
 backgroundFile = "/Users/nedimdrekovic/Python/DB/simplemaps_worldcities/Erde.jpg"
 
 # eigentlich eher dumm geloest, aber es reicht fuers erste
 doppeltesBorrow = False # um zu checken ob borrow doppelt vorhanden
 #spezifischesBorrow = "" # um Namen des Borrows zu speichern statt ganz zum Schluss eintragen
+
+digits_after_point = 4
 
 def rad(grad):
     return (math.pi * grad)/180
@@ -28,32 +30,37 @@ def getCity(city):
     global doppeltesBorrow
     doppeltesBorrow = False
 
-    if len(df[df["city"] == city]) > 1:    # d.h. wenn Stadt mehrmals vorhanden, zB in versch. Ländern
-        countrys = df[df["city"] == city]["country"]
-        res = "/".join(countrys)
+    res = city.split(" (")
+
+    if len(res) > 1:    # d.h. wenn Stadt mehrmals vorhanden, zB in versch. Ländern
+
+        countrys = df[df["city"] == res[0]]["country"]
+
         # damit kein falsches Land eingeben wird, also nur das, was zur Auswahl steht
         while True:
-            country = input("Die Stadt " + city + " gibt es mehrmals auf der Welt. Wähle eines der folgendne Länder aus (" + res + "): ")
+            #country = input("Die Stadt " + city + " gibt es mehrmals auf der Welt. Wähle eines der folgendne Länder aus (" + res + "): ")
+            #country =
+            res2 = res[1].split(", ")
+            res2[-1] = res2[-1][:-1]  # um ")" zu entfernen
             # falls 2 Städte mit dem gleichen Namen sogar im gleichen Land sind
-            if len(df[(df["country"] == country) & (df["city"] == city)]) > 1:
+            if len(res2) > 1:
                 doppeltesBorrow = True
-                borrows = df[(df["country"] == country) & (df["city"] == city)]["admin_name"]
-                res = "/".join(borrows)
-                while True:
-                    borrow = input("Die Stadt " + city + " gibt es mehrmals in " + country + ". Wähle den Bezirk aus (" + res + "): ")
-                    if borrow in res.split('/'):
-                        return df[(df["country"] == country) & (df["city"] == city) & (df["admin_name"] == borrow)].index[0]
+                print("Res",res2)
+                print("Auflisten:",df[(df["country"] == res2[0]) & (df["admin_name"] == res2[1])])
+                return df[(df["country"] == res2[0]) & (df["city"] == res[0]) & (df["admin_name"] == res2[1])].index[0]
+#                while True:
+#                    return df[(df["country"] == country) & (df["city"] == city) & (df["admin_name"] == borrows)].index[0]
             # damit auch wirklich eines der Länder ausgewaehlt wird
-            if country in res.split('/'):
-                return df[(df["country"] == country) & (df["city"] == city)].index[0]
+            return df[(df["country"] == res2[0]) & (df["city"] == res[0])].index[0]
     # falls es die Stadt nur einmal auf der Welt gibt
-    return df[df["city"] == city].index[0]
+    return df[df["city"] == res[0]].index[0]
 
 
 def entfernung():
-    city1 = combo1.get().split('(')[0].strip()
-    city2 = combo2.get().split('(')[0].strip()
-
+    city1 = combo1.get()
+    city2 = combo2.get()
+    print("city1",city1)
+    print("city2",city2)
     index1 = getCity(city1)
     latitude1 = df.loc[index1, "lat"]
     longitude1 = df.loc[index1, "lng"]
@@ -79,14 +86,14 @@ def entfernung():
     c = 2 * math.atan2(np.sqrt(a), np.sqrt(1 - a))
     distance = radius * c
 
-    l1_text = "(Längengrad/Breitengrad) von " + city1 + ("(" + df.loc[df.index[index1], "admin_name"] + ")" if doppeltesBorrow else "") + ": (" + str(longitude1) + u'\N{DEGREE SIGN}/' + str(latitude1) + u'\N{DEGREE SIGN}' + ")"
-    l2_text = "(Längengrad/Breitengrad) von " + city2 + ("(" + df.loc[df.index[index2], "admin_name"] + ")" if doppeltesBorrow else "") + ": (" + str(longitude2) + u'\N{DEGREE SIGN}/' + str(latitude2) + u'\N{DEGREE SIGN}' + ")"
+    l1_text = "(Längengrad/Breitengrad) von " + city1 + ("(" + df.loc[df.index[index1], "admin_name"] + ")" if doppeltesBorrow else "") + ":\n(" + str(round(longitude1, digits_after_point)) + u'\N{DEGREE SIGN}/' + str(round(latitude1, digits_after_point)) + u'\N{DEGREE SIGN}' + ")"
+    l2_text = "(Längengrad/Breitengrad) von " + city2 + ("(" + df.loc[df.index[index2], "admin_name"] + ")" if doppeltesBorrow else "") + ":\n(" + str(round(longitude2, digits_after_point)) + u'\N{DEGREE SIGN}/' + str(round(latitude2, digits_after_point)) + u'\N{DEGREE SIGN}' + ")"
 
 
-    l1 = tk.Label(tkFenster, text=l1_text).grid(row=2, column=0)
-    l2 = tk.Label(tkFenster, text=l2_text).grid(row=2, column=1)
+    l1 = tk.Label(tkFenster, text=l1_text).grid(row=2, column=0, padx=10, pady=10)
+    l2 = tk.Label(tkFenster, text=l2_text).grid(row=2, column=1, padx=10, pady=10)
 
-    resulttext = "Entfernung zwischen " + city1 + " und " + city2 + ": " + str(distance) + " km"
+    resulttext = "Entfernung zwischen " + city1 + " und " + city2 + ": " + str(round(distance, digits_after_point)) + " km"
     result = tk.Label(tkFenster, text=resulttext).grid(row=2, column=2, padx=10, pady=10)
 
     print("Entfernung zwischen",city1,"und",city2,":",distance)
@@ -102,7 +109,7 @@ if __name__ == '__main__':
     tkFenster = tk.Tk()
     # Den Fenstertitle erstellen
     tkFenster.title("Entfernung zweier Städte (Luftlinie)")
-    tkFenster.geometry("1000x300")
+    tkFenster.geometry("1200x300")
     tkFenster.configure(background='turquoise')
 
     label1 = tk.Label(tkFenster, text="1.Stadt", bg="red", fg="white").grid(row=0, column=0, padx=10, pady=10)
@@ -111,9 +118,8 @@ if __name__ == '__main__':
     combo1_cities = [city for city in df["city"]]
     combo1_cities = [city if city not in (combo1_cities[:index] + combo1_cities[index+1:]) else (city + " (" + str(df.loc[index, "country"]) + ", " + str(df.loc[index, "admin_name"]) + ")") if (len(df[(df["city"] == city) & (df["country"] == df.iloc[index]["country"])]) >= 2) else (city + " (" + str(df.loc[index, "country"]) + ")") for index, city in enumerate(combo1_cities)] # wenn bis auf city das gleiche element enthalten ist
 
-
     combo1 = ttk.Combobox(tkFenster, state="readonly", values=combo1_cities)
-    combo2 = ttk.Combobox(tkFenster, state="readonly", values=df["city"].tolist())
+    combo2 = ttk.Combobox(tkFenster, state="readonly", values=combo1_cities)
     combo1.grid(column=0, row=1)
     combo2.grid(column=1, row=1)
     combo1.current(1)
