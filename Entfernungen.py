@@ -76,14 +76,14 @@ def entfernung():
     l1_text = ("(" + df.loc[df.index[index1], "admin_name"] + ")" if imSelbenLand else "") + "(" + str(round(longitude1, digits_after_point)) + u'\N{DEGREE SIGN}/' + str(round(latitude1, digits_after_point)) + u'\N{DEGREE SIGN}' + ")"
     l2_text = ("(" + df.loc[df.index[index2], "admin_name"] + ")" if imSelbenLand else "") + "(" + str(round(longitude2, digits_after_point)) + u'\N{DEGREE SIGN}/' + str(round(latitude2, digits_after_point)) + u'\N{DEGREE SIGN}' + ")"
 
-    l1 = tk.Label(tkFenster, text=l1_text).grid(row=2, column=3)
-    l2 = tk.Label(tkFenster, text=l2_text).grid(row=3, column=3)
-    lb1 = tk.Label(tkFenster, text="(Längengrad/Breitengrad) von " + combo1.get() + " =", bg="blue", fg="orange").grid(row=2, column=2, pady=3)
-    lb2 = tk.Label(tkFenster, text="(Längengrad/Breitengrad) von " + combo2.get() + " =", bg="blue", fg="orange").grid(row=3, column=2, pady=3)
-    entf = tk.Label(tkFenster, text="Entfernung zwischen \"" + combo1.get() + "\"\nund \"" + combo2.get() + "\" = ", bg="yellow", fg="dark green").grid(row=4, column=2, padx=10, pady=10)
+    tk.Label(tkFenster, text=l1_text, bg="red", fg="white").grid(row=2, column=3)
+    tk.Label(tkFenster, text=l2_text, bg="blue", fg="orange").grid(row=3, column=3)
+    tk.Label(tkFenster, text="(Längengrad/Breitengrad) von\n" + combo1.get() + " =", bg="red", fg="white").grid(row=2, column=2, pady=3)
+    tk.Label(tkFenster, text="(Längengrad/Breitengrad) von\n" + combo2.get() + " =", bg="blue", fg="orange").grid(row=3, column=2, pady=3)
+    tk.Label(tkFenster, text="Entfernung zwischen \"" + combo1.get() + "\"\nund \"" + combo2.get() + "\" = ", bg="yellow", fg="dark green").grid(row=4, column=2, padx=10, pady=10)
 
     resultText = str(round(distance, digits_after_point)).replace(".", ",") + " km"
-    result = tk.Label(tkFenster, text=resultText, bg="red", fg="white").grid(row=4, column=3)
+    result = tk.Label(tkFenster, text=resultText, bg="yellow", fg="dark green").grid(row=4, column=3)
 
     print("Entfernung zwischen",city1,"und",city2,":",distance,"\n")
 
@@ -116,8 +116,10 @@ if __name__ == '__main__':
     combo1.current(1)
     combo2.current(1)
 
+    
+
     label1 = tk.Label(tkFenster, text="1.Stadt", bg="red", fg="white").grid(row=0, column=0, padx=3)
-    label2 = tk.Label(tkFenster, text="2.Stadt", bg="green", fg="black").grid(row=0, column=1, padx=3)
+    label2 = tk.Label(tkFenster, text="2.Stadt", bg="blue", fg="orange").grid(row=0, column=1, padx=3)
     berechne = ttk.Button(tkFenster, text="Berechne die Entfernung der beiden Städte", command=entfernung).grid(row=1, column=2)
 
     # In der Ereignisschleife auf Eingabe des Benutzers warten.
