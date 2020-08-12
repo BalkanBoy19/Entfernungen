@@ -12,8 +12,7 @@ backgroundFile = "/Users/nedimdrekovic/Python/DB/simplemaps_worldcities/Erde.jpg
 backgroundColor = "DeepSkyBlue3"
 
 # eigentlich eher dumm geloest, aber es reicht fuers erste
-doppeltesBorrow = False # um zu checken ob borrow doppelt vorhanden
-#spezifischesBorrow = "" # um Namen des Borrows zu speichern statt ganz zum Schluss eintragen
+imSelbenLand = False # um zu checken ob borrow doppelt vorhanden
 
 digits_after_point = 4
 
@@ -28,8 +27,8 @@ def isValid(i):
         print("Diese Stadt exisiert nicht. Bitte existierende Stadt eingeben: ")
 
 def getCity(city):
-    global doppeltesBorrow
-    doppeltesBorrow = False
+    global imSelbenLand
+    imSelbenLand = False
 
     res = city.split(" (")
 
@@ -41,7 +40,7 @@ def getCity(city):
             res2[-1] = res2[-1][:-1]  # um ")" zu entfernen
             # falls 2 Städte mit dem gleichen Namen sogar im gleichen Land sind
             if len(res2) > 1:
-                doppeltesBorrow = True
+                imSelbenLand = True
                 return df[(df["country"] == res2[0]) & (df["city"] == res[0]) & (df["admin_name"] == res2[1])].index[0]
             # falls die beiden Städte in versch. Länder sind.
             return df[(df["country"] == res2[0]) & (df["city"] == res[0])].index[0]
@@ -52,7 +51,6 @@ def getCity(city):
 def entfernung():
     city1 = combo1.get()
     city2 = combo2.get()
-
     index1 = getCity(city1)
     latitude1 = df.loc[index1, "lat"]
     longitude1 = df.loc[index1, "lng"]
@@ -60,31 +58,29 @@ def entfernung():
     latitude2 = df.loc[index2, "lat"]
     longitude2 = df.loc[index2, "lng"]
 
-#    print("\n(Längengrad/Breitengrad) von", city1 + ("(" + df.loc[df.index[index1], "admin_name"] + ")" if doppeltesBorrow else "") + ": (" + str(longitude1) + u'\N{DEGREE SIGN}/' + str(latitude1) + u'\N{DEGREE SIGN}' + ")")
-#    print("(Längengrad/Breitengrad) von", city2 + ("(" + df.loc[df.index[index2], "admin_name"] + ")" if doppeltesBorrow else "") + ": (" + str(longitude2) + u'\N{DEGREE SIGN}/' + str(latitude2) + u'\N{DEGREE SIGN}' + ")")
+#    print("\n(Längengrad/Breitengrad) von", city1 + ("(" + df.loc[df.index[index1], "admin_name"] + ")" if imSelbenLand else "") + ": (" + str(longitude1) + u'\N{DEGREE SIGN}/' + str(latitude1) + u'\N{DEGREE SIGN}' + ")")
+#    print("(Längengrad/Breitengrad) von", city2 + ("(" + df.loc[df.index[index2], "admin_name"] + ")" if imSelbenLand else "") + ": (" + str(longitude2) + u'\N{DEGREE SIGN}/' + str(latitude2) + u'\N{DEGREE SIGN}' + ")")
+
     durchmesser = 12756.27
     radius = durchmesser / 2
-
     lat1 = rad(latitude1)
     lon1 = rad(longitude1)
     lat2 = rad(latitude2)
     lon2 = rad(longitude2)
     dlon = lon2 - lon1
     dlat = lat2 - lat1
-
     a = np.sin(dlat / 2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2)**2
     c = 2 * math.atan2(np.sqrt(a), np.sqrt(1 - a))
     distance = radius * c
 
-    l1_text = ("(" + df.loc[df.index[index1], "admin_name"] + ")" if doppeltesBorrow else "") + "(" + str(round(longitude1, digits_after_point)) + u'\N{DEGREE SIGN}/' + str(round(latitude1, digits_after_point)) + u'\N{DEGREE SIGN}' + ")"
-    l2_text = ("(" + df.loc[df.index[index2], "admin_name"] + ")" if doppeltesBorrow else "") + "(" + str(round(longitude2, digits_after_point)) + u'\N{DEGREE SIGN}/' + str(round(latitude2, digits_after_point)) + u'\N{DEGREE SIGN}' + ")"
+    l1_text = ("(" + df.loc[df.index[index1], "admin_name"] + ")" if imSelbenLand else "") + "(" + str(round(longitude1, digits_after_point)) + u'\N{DEGREE SIGN}/' + str(round(latitude1, digits_after_point)) + u'\N{DEGREE SIGN}' + ")"
+    l2_text = ("(" + df.loc[df.index[index2], "admin_name"] + ")" if imSelbenLand else "") + "(" + str(round(longitude2, digits_after_point)) + u'\N{DEGREE SIGN}/' + str(round(latitude2, digits_after_point)) + u'\N{DEGREE SIGN}' + ")"
 
     l1 = tk.Label(tkFenster, text=l1_text).grid(row=2, column=3)
     l2 = tk.Label(tkFenster, text=l2_text).grid(row=3, column=3)
-
     lb1 = tk.Label(tkFenster, text="(Längengrad/Breitengrad) von " + combo1.get() + " =", bg="blue", fg="orange").grid(row=2, column=2, pady=3)
     lb2 = tk.Label(tkFenster, text="(Längengrad/Breitengrad) von " + combo2.get() + " =", bg="blue", fg="orange").grid(row=3, column=2, pady=3)
-    entf = tk.Label(tkFenster, text="Entfernung zwischen \"" + combo1.get() + "\" und \"" + combo1.get() + "\" = ", bg="yellow", fg="dark green").grid(row=4, column=2, padx=10, pady=10)
+    entf = tk.Label(tkFenster, text="Entfernung zwischen \"" + combo1.get() + "\"\nund \"" + combo2.get() + "\" = ", bg="yellow", fg="dark green").grid(row=4, column=2, padx=10, pady=10)
 
     resultText = str(round(distance, digits_after_point)).replace(".", ",") + " km"
     result = tk.Label(tkFenster, text=resultText, bg="red", fg="white").grid(row=4, column=3)
@@ -98,7 +94,7 @@ if __name__ == '__main__':
     tkFenster = tk.Tk()
     # Den Fenstertitle erstellen
     tkFenster.title("Entfernung zweier Städte (Luftlinie)")
-    tkFenster.geometry("900x200")
+    tkFenster.geometry("1000x225")
     tkFenster.configure(background=backgroundColor)
 
 #    single_cities = [city for city in df["city"] if df["city"].tolist().count(city) == 1]
@@ -122,9 +118,6 @@ if __name__ == '__main__':
 
     label1 = tk.Label(tkFenster, text="1.Stadt", bg="red", fg="white").grid(row=0, column=0, padx=3)
     label2 = tk.Label(tkFenster, text="2.Stadt", bg="green", fg="black").grid(row=0, column=1, padx=3)
-#    label1.config(width=20)
-#    label2.config(width=20)
-
     berechne = ttk.Button(tkFenster, text="Berechne die Entfernung der beiden Städte", command=entfernung).grid(row=1, column=2)
 
     # In der Ereignisschleife auf Eingabe des Benutzers warten.
