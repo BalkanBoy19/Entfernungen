@@ -5,9 +5,12 @@ import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk
 import os
+import sqlite3
+from sqlite3 import OperationalError
 
 #file = str(os.path.realpath(__file__))
 file = "/Users/nedimdrekovic/Python/DB/simplemaps_worldcities/" + "worldcities.csv"
+sqlFile = "/Users/nedimdrekovic/Python/DB/simplemaps_worldcities/" + "World_Cities_Location_table.sql"
 backgroundFile = "/Users/nedimdrekovic/Python/DB/simplemaps_worldcities/Erde.jpg"
 backgroundColor = "DeepSkyBlue3"
 
@@ -29,9 +32,7 @@ def isValid(i):
 def getCity(city):
     global imSelbenLand
     imSelbenLand = False
-
-    res = city.split(" (")
-
+    """
     if len(res) > 1:    # d.h. wenn Stadt mehrmals vorhanden, zB in versch. Ländern
         countrys = df[df["city"] == res[0]]["country"]
         # damit kein falsches Land eingeben wird, also nur das, was zur Auswahl steht
@@ -45,18 +46,17 @@ def getCity(city):
             # falls die beiden Städte in versch. Länder sind.
             return df[(df["country"] == res2[0]) & (df["city"] == res[0])].index[0]
     # falls es die Stadt nur einmal auf der Welt gibt
-    return df[df["city"] == res[0]].index[0]
+    """
+    cmd = zeiger.execute("Select latitude, longitude From location Where city = '" + city + "'")
+    res = zeiger.fetchone()
+    return res[0], res[1]
 
 
 def entfernung():
     city1 = combo1.get()
     city2 = combo2.get()
-    index1 = getCity(city1)
-    latitude1 = df.loc[index1, "lat"]
-    longitude1 = df.loc[index1, "lng"]
-    index2 = getCity(city2)
-    latitude2 = df.loc[index2, "lat"]
-    longitude2 = df.loc[index2, "lng"]
+    latitude1, longitude1 = getCity(city1)
+    latitude2, longitude2 = getCity(city2)
 
 #    print("\n(Längengrad/Breitengrad) von", city1 + ("(" + df.loc[df.index[index1], "admin_name"] + ")" if imSelbenLand else "") + ": (" + str(longitude1) + u'\N{DEGREE SIGN}/' + str(latitude1) + u'\N{DEGREE SIGN}' + ")")
 #    print("(Längengrad/Breitengrad) von", city2 + ("(" + df.loc[df.index[index2], "admin_name"] + ")" if imSelbenLand else "") + ": (" + str(longitude2) + u'\N{DEGREE SIGN}/' + str(latitude2) + u'\N{DEGREE SIGN}' + ")")
@@ -90,6 +90,18 @@ def entfernung():
 if __name__ == '__main__':
     df = pd.read_csv(file)
 
+    connection = sqlite3.connect("/Users/nedimdrekovic/Python/DB/simplemaps_worldcities/cities.db", timeout=10)
+    zeiger = connection.cursor()
+
+    sql_file = open(sqlFile, 'r')
+    sql_as_string = str(sql_file.read())
+    cmds = sql_as_string.split(';')
+    zeiger.execute(cmds[1])    # create table hinzufuegen
+
+    cmd = zeiger.execute("Select city From location;")
+    cities = zeiger.fetchall()
+    cities_array = [cmd[0] for cmd in cities]
+
     # Ein Fenster erstellen
     tkFenster = tk.Tk()
     # Den Fenstertitle erstellen
@@ -97,26 +109,15 @@ if __name__ == '__main__':
     tkFenster.geometry("1000x225")
     tkFenster.configure(background=backgroundColor)
 
-#    single_cities = [city for city in df["city"] if df["city"].tolist().count(city) == 1]
-#    double_cities = sorted(list(set(df["city"].tolist()) - set(single_cities)))
-    # und dann zusammenfügen zum Schluss
+#    combo1_cities = df["city"].tolist()
+#    combo1_cities = [city if city not in (combo1_cities[:index] + combo1_cities[index+1:]) else (city + " (" + str(df.loc[index, "country"]) + ", " + str(df.loc[index, "admin_name"]) + ")") if (len(df[(df["city"] == city) & (df["country"] == df.iloc[index]["country"])]) >= 2) else (city + " (" + str(df.loc[index, "country"]) + ")") for index, city in enumerate(combo1_cities)] # wenn bis auf city das gleiche element enthalten ist
 
-    combo1_cities = df["city"].tolist()
-    combo1_cities = [city if city not in (combo1_cities[:index] + combo1_cities[index+1:]) else (city + " (" + str(df.loc[index, "country"]) + ", " + str(df.loc[index, "admin_name"]) + ")") if (len(df[(df["city"] == city) & (df["country"] == df.iloc[index]["country"])]) >= 2) else (city + " (" + str(df.loc[index, "country"]) + ")") for index, city in enumerate(combo1_cities)] # wenn bis auf city das gleiche element enthalten ist
-
-#    combo1_cities = [city for city in df["city"]]
-#    combo1_cities = [city if city in (combo1_cities[:index] + combo1_cities[index+1:]) else city for index, city in enumerate(combo1_cities)] # wenn bis auf city das gleiche element enthalten ist
-#    +" ("+df.iloc[index]["country"]+")"
-#    combo1_cities = [(city + " (" + str(df.loc[index, "admin_name"]) + ")") if len(df[df["city"] == city]) > 1 else city for index, city in enumerate(combo1_cities)]
-
-    combo1 = ttk.Combobox(tkFenster, state="readonly", values=combo1_cities)
-    combo2 = ttk.Combobox(tkFenster, state="readonly", values=combo1_cities)
+    combo1 = ttk.Combobox(tkFenster, state="readonly", values=cities_array)
+    combo2 = ttk.Combobox(tkFenster, state="readonly", values=cities_array)
     combo1.grid(column=0, row=1, padx=5)
     combo2.grid(column=1, row=1, padx=5)
     combo1.current(1)
     combo2.current(1)
-
-    
 
     label1 = tk.Label(tkFenster, text="1.Stadt", bg="red", fg="white").grid(row=0, column=0, padx=3)
     label2 = tk.Label(tkFenster, text="2.Stadt", bg="blue", fg="orange").grid(row=0, column=1, padx=3)
@@ -124,13 +125,6 @@ if __name__ == '__main__':
 
     # In der Ereignisschleife auf Eingabe des Benutzers warten.
     tkFenster.mainloop()
-#
-""" for index, city in enumerate(double_cities):
-        if combo1_cities.count(city) == 1:  # Stadt existiert nur einmal
-            res.append(city)
-        else:
-            if city in df[(df["city"] == city) & (df["country"] == df.iloc[index]["country"])]:
-                res.append(city + " (" + str(df.loc[index, "country"]) + ")")
-            else:
-                res.append(city + " (" + str(df.loc[index, "country"]) + ", " + str(df.loc[index, "admin_name"]) + ")")
-"""
+
+    connection.commit()
+    connection.close()
