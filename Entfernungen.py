@@ -7,6 +7,7 @@ from PIL import Image, ImageTk
 import os
 import sqlite3
 from sqlite3 import OperationalError
+import time
 
 #file = str(os.path.realpath(__file__))
 csv_file = "/Users/nedimdrekovic/Python/DB/simplemaps_worldcities/" + "world_cities.csv"
@@ -18,7 +19,7 @@ backgroundColor = "DeepSkyBlue3"
 # eigentlich eher dumm geloest, aber es reicht fuers erste
 imSelbenLand = False # um zu checken ob country doppelt vorhanden
 
-n = 1000    # Anzal an zu suchende Städte
+n = 10000    # Anzal an zu suchende Städte
 digits_after_point = 2
 
 def rad(grad):
@@ -32,37 +33,19 @@ def isValid(i):
         print("Diese Stadt exisiert nicht. Bitte existierende Stadt eingeben: ")
 
 def getCity(city):
-    global imSelbenLand
-    imSelbenLand = False
-
-    cmd = zeiger.execute("Select latitude, longitude From cities Where name = '" + city.split(' (')[0] + "'")    # um die Stadt zu erkennen
-    res = [(lat, long) for (lat, long) in zeiger.fetchall()]
-
-    if len(res) > 1:    # d.h. wenn Stadt mehrmals vorhanden, zB in versch. Ländern
-        for i in range(len(res)):
-            cmds = zeiger.execute("Select latitude, longitude from cities Where name = '" + city.split(' (')[0] + "' and country = '" + city.split(' (')[1][:-1] + "' and latitude = " + str(res[i][0]) + " and longitude = " + str(res[i][1]))
-            c = cmds.fetchone()
-            if c != None:
-                return c[0], c[1]
-        return 0, 0
-        """
-        # damit kein falsches Land eingeben wird, also nur das, was zur Auswahl steht
-        while True:
-            res2 = res[1].split(", ")
-            res2[-1] = res2[-1][:-1]  # um ")" zu entfernen
-            # falls 2 Städte mit dem gleichen Namen sogar im gleichen Land sind
-            if len(res2) > 1:
-                imSelbenLand = True
-                return df[(df["country"] == res2[0]) & (df["city"] == res[0]) & (df["admin_name"] == res2[1])].index[0]
-            # falls die beiden Städte in versch. Länder sind.
-            return df[(df["country"] == res2[0]) & (df["city"] == res[0])].index[0]
-        """
-    # falls es die Stadt nur einmal auf der Welt gibt
-
-    #cmd = zeiger.execute("Select latitude, longitude From cities Where name = '" + city + "'")
-    #res = zeiger.fetchone()
-    return res[0][0], res[0][1]     # dummy
-
+    stadt = city.split(' (')
+    command_string = "Select latitude, longitude From cities Where name = '" + stadt[0] + "'"
+    if len(stadt) >= 2: # falls es die Stadt also doppelt gibt
+        if len(stadt[1].split(', ')) == 1:  # dann unterscheiden sich die Staedte im Land, weil es dann ein Komma gibt
+            land = stadt[1][:-1]
+            command_string += " and country = '" + land + "'"
+        else:                               # im gleichen Land, also Region vorhanden
+            region = stadt[1].split(', ')[1][:-1]
+            command_string += " and country = '" + stadt[1].split(',')[0] + "'"
+            command_string += " and region = '" + region + "'"
+    zeiger.execute(command_string)
+    latitude, longitude = zeiger.fetchone()
+    return latitude, longitude
 
 def entfernung():
     city1 = combo1.get()
@@ -85,8 +68,8 @@ def entfernung():
     c = 2 * math.atan2(np.sqrt(a), np.sqrt(1 - a))
     distance = radius * c
 
-    l1_text = ("(" + df.loc[df.index[index1], "admin_name"] + ")" if imSelbenLand else "") + "(" + str(round(longitude1, digits_after_point)) + u'\N{DEGREE SIGN}/' + str(round(latitude1, digits_after_point)) + u'\N{DEGREE SIGN}' + ")"
-    l2_text = ("(" + df.loc[df.index[index2], "admin_name"] + ")" if imSelbenLand else "") + "(" + str(round(longitude2, digits_after_point)) + u'\N{DEGREE SIGN}/' + str(round(latitude2, digits_after_point)) + u'\N{DEGREE SIGN}' + ")"
+    l1_text = ("(" + df.loc[df.index[index1], "admin_name"] + ")" if imSelbenLand else "") + "(" + str(round(latitude1, digits_after_point)) + u'\N{DEGREE SIGN}/' + str(round(longitude1, digits_after_point)) + u'\N{DEGREE SIGN}' + ")"
+    l2_text = ("(" + df.loc[df.index[index2], "admin_name"] + ")" if imSelbenLand else "") + "(" + str(round(latitude2, digits_after_point)) + u'\N{DEGREE SIGN}/' + str(round(longitude2, digits_after_point)) + u'\N{DEGREE SIGN}' + ")"
 
     tk.Label(tkFenster, text=l1_text, bg="red", fg="white").grid(row=2, column=3)
     tk.Label(tkFenster, text=l2_text, bg="blue", fg="orange").grid(row=3, column=3)
@@ -97,7 +80,7 @@ def entfernung():
     resultText = str(round(distance, digits_after_point)).replace(".", ",") + " km\n(" + str(round(distance/1.60934, digits_after_point)) + " miles)"
     result = tk.Label(tkFenster, text=resultText, bg="yellow", fg="dark green").grid(row=4, column=3)
 
-    print("Entfernung zwischen",city1,"und",city2,":",distance,"\n")
+    print("Entfernung zwischen",city1,"und",city2,":",distance,"km")
 
 if __name__ == '__main__':
     connection = sqlite3.connect(db_file, timeout=10)
@@ -111,19 +94,22 @@ if __name__ == '__main__':
         try:
             zeiger.execute(cmds[index])
         except OperationalError:
-            print("Fehler: " + line)
+            print("Fehler: " + cmds[index])
 
-    cmd = zeiger.execute("Select name, country, region From cities;")
-    cities = zeiger.fetchall()
-    cities = sorted(cities)
+    zeiger.execute("Select name, country, region From cities;")
+    cities = sorted(zeiger.fetchall())[:n]
 
     cities_array = []
+    staedte = [city[0] for city in cities if city[0] != ""]
     for index, city in enumerate(cities):
         if index == len(cities)-1:
             break
         if city[0] != ''.strip():   # city[0] ist hier immer der Name
-            if (cities[index][0] == cities[index+1][0]) | (cities[index][0] == cities[index-1][0]): # bedeutet dass 2 Mal die selbe Stadt in der Liste ist und man nun das Land ueberprueft
-                cities_array.append(cities[index][0] + " (" + cities[index][1] + ")")
+            if staedte.count(city[0]) >= 2: # bedeutet dass 2 Mal die selbe Stadt in der Liste ist und man nun das Land ueberprueft
+                if ((cities[index][0] == cities[index+1][0]) & (cities[index][1] == cities[index+1][1])) | ((cities[index][0] == cities[index-1][0]) & (cities[index][1] == cities[index-1][1])): # Stadt und Land gleich
+                    cities_array.append(cities[index][0] + " (" + cities[index][1] + ", " + cities[index][2] + ")")
+                else:   # Städte sind gleich, Länder aber nicht
+                    cities_array.append(cities[index][0] + " (" + cities[index][1] + ")")
             else:                   # wenn Stadt nur einmal vorhanden
                 cities_array.append(cities[index][0])
 
@@ -141,8 +127,8 @@ if __name__ == '__main__':
     combo2 = ttk.Combobox(tkFenster, state="readonly", values=sorted(cities_array))
     combo1.grid(column=0, row=1, padx=5)
     combo2.grid(column=1, row=1, padx=5)
-    combo1.current(1)
-    combo2.current(1)
+    combo1.current(0)
+    combo2.current(0)
 
     label1 = tk.Label(tkFenster, text="1.Stadt", bg="red", fg="white").grid(row=0, column=0, padx=3)
     label2 = tk.Label(tkFenster, text="2.Stadt", bg="blue", fg="orange").grid(row=0, column=1, padx=3)
