@@ -9,15 +9,17 @@ import sqlite3
 from sqlite3 import OperationalError
 
 #file = str(os.path.realpath(__file__))
-file = "/Users/nedimdrekovic/Python/DB/simplemaps_worldcities/" + "worldcities.csv"
-sqlFile = "/Users/nedimdrekovic/Python/DB/simplemaps_worldcities/" + "worlddb.sql"
-backgroundFile = "/Users/nedimdrekovic/Python/DB/simplemaps_worldcities/Erde.jpg"
+csv_file = "/Users/nedimdrekovic/Python/DB/simplemaps_worldcities/" + "world_cities.csv"
+sql_file = "/Users/nedimdrekovic/Python/DB/simplemaps_worldcities/" + "world_cities.sql"
+db_file = "/Users/nedimdrekovic/Python/DB/simplemaps_worldcities/" + "world_cities.db"
+backgroundImage_file = "/Users/nedimdrekovic/Python/DB/simplemaps_worldcities/Erde.jpg"
 backgroundColor = "DeepSkyBlue3"
 
 # eigentlich eher dumm geloest, aber es reicht fuers erste
-imSelbenLand = False # um zu checken ob borrow doppelt vorhanden
+imSelbenLand = False # um zu checken ob country doppelt vorhanden
 
-digits_after_point = 4
+n = 1000    # Anzal an zu suchende Städte
+digits_after_point = 2
 
 def rad(grad):
     return (math.pi * grad)/180
@@ -35,15 +37,11 @@ def getCity(city):
 
     cmd = zeiger.execute("Select latitude, longitude From cities Where name = '" + city.split(' (')[0] + "'")    # um die Stadt zu erkennen
     res = [(lat, long) for (lat, long) in zeiger.fetchall()]
-    print("Len:", res)
 
     if len(res) > 1:    # d.h. wenn Stadt mehrmals vorhanden, zB in versch. Ländern
-        print("Lat:",str(res[0][0]))
-        print("Long:",str(res[0][1]))
         for i in range(len(res)):
             cmds = zeiger.execute("Select latitude, longitude from cities Where name = '" + city.split(' (')[0] + "' and country = '" + city.split(' (')[1][:-1] + "' and latitude = " + str(res[i][0]) + " and longitude = " + str(res[i][1]))
             c = cmds.fetchone()
-            print("c:",c)
             if c != None:
                 return c[0], c[1]
         return 0, 0
@@ -96,28 +94,22 @@ def entfernung():
     tk.Label(tkFenster, text="(Längengrad/Breitengrad) von\n" + combo2.get() + " =", bg="blue", fg="orange").grid(row=3, column=2, pady=3)
     tk.Label(tkFenster, text="Entfernung zwischen \"" + combo1.get() + "\"\nund \"" + combo2.get() + "\" = ", bg="yellow", fg="dark green").grid(row=4, column=2, padx=10, pady=10)
 
-    resultText = str(round(distance, digits_after_point)).replace(".", ",") + " km\n(" + str(round(distance*1.60934, digits_after_point)) + " miles)"
+    resultText = str(round(distance, digits_after_point)).replace(".", ",") + " km\n(" + str(round(distance/1.60934, digits_after_point)) + " miles)"
     result = tk.Label(tkFenster, text=resultText, bg="yellow", fg="dark green").grid(row=4, column=3)
 
     print("Entfernung zwischen",city1,"und",city2,":",distance,"\n")
 
 if __name__ == '__main__':
-    df = pd.read_csv(file)
-
-    connection = sqlite3.connect("/Users/nedimdrekovic/Python/DB/simplemaps_worldcities/worlddb.db", timeout=10)
+    connection = sqlite3.connect(db_file, timeout=10)
     zeiger = connection.cursor()
 
-    sql_file = open("/Users/nedimdrekovic/Python/DB/simplemaps_worldcities/Saving.sql", 'r')
-    sql_as_string = str(sql_file.read())
-    cmds = sql_as_string.split(';')
-    #print(cmds)
+    sql_as_string = open(sql_file, 'r').read()
+    cmds = sql_as_string.split(';')[:n]     # suchen nur die ersten 1000 Werte
     zeiger.execute("DROP TABLE IF EXISTS `cities`;")
 
-    for index, line in enumerate(cmds):
-        if index == 1e4:
-            break
+    for index in range(len(cmds)):
         try:
-            zeiger.execute(line)
+            zeiger.execute(cmds[index])
         except OperationalError:
             print("Fehler: " + line)
 
@@ -129,17 +121,11 @@ if __name__ == '__main__':
     for index, city in enumerate(cities):
         if index == len(cities)-1:
             break
-        if city[0] == ''.strip():   # city[0] ist hier immer der Name
-            pass
-            #cities_array.append(city[0].replace("{", "").replace("}", ""))
-        elif (cities[index][0] == cities[index+1][0]) | (cities[index][0] == cities[index-1][0]): # bedeutet dass 2 Mal die selbe Stadt in der Liste ist und man nun das Land ueberprueft
-            cities_array.append(cities[index][0] + " (" + cities[index][1] + ")")
-        else:   # wenn Stadt nur einmal vorhanden
-            cities_array.append(cities[index][0])
-
-    #cities_array = [city[0].replace("{", "").replace("}", "") for city in cities if city[0] != '']
-    for c in cities_array:
-        print("C:",c)
+        if city[0] != ''.strip():   # city[0] ist hier immer der Name
+            if (cities[index][0] == cities[index+1][0]) | (cities[index][0] == cities[index-1][0]): # bedeutet dass 2 Mal die selbe Stadt in der Liste ist und man nun das Land ueberprueft
+                cities_array.append(cities[index][0] + " (" + cities[index][1] + ")")
+            else:                   # wenn Stadt nur einmal vorhanden
+                cities_array.append(cities[index][0])
 
     # Ein Fenster erstellen
     tkFenster = tk.Tk()
