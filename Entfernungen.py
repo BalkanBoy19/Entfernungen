@@ -33,14 +33,21 @@ def getCity(city):
     global imSelbenLand
     imSelbenLand = False
 
-    cmd = zeiger.execute("Select latitude, longitude From cities Where name = '" + city + "'")
+    cmd = zeiger.execute("Select latitude, longitude From cities Where name = '" + city.split(' (')[0] + "'")    # um die Stadt zu erkennen
     res = [(lat, long) for (lat, long) in zeiger.fetchall()]
+    print("Len:", res)
 
     if len(res) > 1:    # d.h. wenn Stadt mehrmals vorhanden, zB in versch. Ländern
-        pass
+        print("Lat:",str(res[0][0]))
+        print("Long:",str(res[0][1]))
+        for i in range(len(res)):
+            cmds = zeiger.execute("Select latitude, longitude from cities Where name = '" + city.split(' (')[0] + "' and country = '" + city.split(' (')[1][:-1] + "' and latitude = " + str(res[i][0]) + " and longitude = " + str(res[i][1]))
+            c = cmds.fetchone()
+            print("c:",c)
+            if c != None:
+                return c[0], c[1]
+        return 0, 0
         """
-        cmd2 = zeiger.execute("Select country from cities Where name = '" + city + "' and latitude = " + res[0] + " and longitude = " + res[1])
-        countrys = df[df["city"] == res[0]]
         # damit kein falsches Land eingeben wird, also nur das, was zur Auswahl steht
         while True:
             res2 = res[1].split(", ")
@@ -122,8 +129,9 @@ if __name__ == '__main__':
     for index, city in enumerate(cities):
         if index == len(cities)-1:
             break
-        #if city[0] == '{}':   # city[0] ist hier immer der Name
-        #    cities_array.append(city[0].replace("{", "").replace("}", ""))
+        if city[0] == ''.strip():   # city[0] ist hier immer der Name
+            pass
+            #cities_array.append(city[0].replace("{", "").replace("}", ""))
         elif (cities[index][0] == cities[index+1][0]) | (cities[index][0] == cities[index-1][0]): # bedeutet dass 2 Mal die selbe Stadt in der Liste ist und man nun das Land ueberprueft
             cities_array.append(cities[index][0] + " (" + cities[index][1] + ")")
         else:   # wenn Stadt nur einmal vorhanden
