@@ -10,7 +10,7 @@ from sqlite3 import OperationalError
 
 #file = str(os.path.realpath(__file__))
 file = "/Users/nedimdrekovic/Python/DB/simplemaps_worldcities/" + "worldcities.csv"
-sqlFile = "/Users/nedimdrekovic/Python/DB/simplemaps_worldcities/" + "World_Cities_Location_table.sql"
+sqlFile = "/Users/nedimdrekovic/Python/DB/simplemaps_worldcities/" + "worlddb.sql"
 backgroundFile = "/Users/nedimdrekovic/Python/DB/simplemaps_worldcities/Erde.jpg"
 backgroundColor = "DeepSkyBlue3"
 
@@ -32,9 +32,15 @@ def isValid(i):
 def getCity(city):
     global imSelbenLand
     imSelbenLand = False
-    """
+
+    cmd = zeiger.execute("Select latitude, longitude From cities Where name = '" + city + "'")
+    res = [(lat, long) for (lat, long) in zeiger.fetchall()]
+
     if len(res) > 1:    # d.h. wenn Stadt mehrmals vorhanden, zB in versch. Ländern
-        countrys = df[df["city"] == res[0]]["country"]
+        pass
+        """
+        cmd2 = zeiger.execute("Select country from cities Where name = '" + city + "' and latitude = " + res[0] + " and longitude = " + res[1])
+        countrys = df[df["city"] == res[0]]
         # damit kein falsches Land eingeben wird, also nur das, was zur Auswahl steht
         while True:
             res2 = res[1].split(", ")
@@ -45,11 +51,12 @@ def getCity(city):
                 return df[(df["country"] == res2[0]) & (df["city"] == res[0]) & (df["admin_name"] == res2[1])].index[0]
             # falls die beiden Städte in versch. Länder sind.
             return df[(df["country"] == res2[0]) & (df["city"] == res[0])].index[0]
+        """
     # falls es die Stadt nur einmal auf der Welt gibt
-    """
-    cmd = zeiger.execute("Select latitude, longitude From location Where city = '" + city + "'")
-    res = zeiger.fetchone()
-    return res[0], res[1]
+
+    #cmd = zeiger.execute("Select latitude, longitude From cities Where name = '" + city + "'")
+    #res = zeiger.fetchone()
+    return res[0][0], res[0][1]     # dummy
 
 
 def entfernung():
@@ -82,7 +89,7 @@ def entfernung():
     tk.Label(tkFenster, text="(Längengrad/Breitengrad) von\n" + combo2.get() + " =", bg="blue", fg="orange").grid(row=3, column=2, pady=3)
     tk.Label(tkFenster, text="Entfernung zwischen \"" + combo1.get() + "\"\nund \"" + combo2.get() + "\" = ", bg="yellow", fg="dark green").grid(row=4, column=2, padx=10, pady=10)
 
-    resultText = str(round(distance, digits_after_point)).replace(".", ",") + " km"
+    resultText = str(round(distance, digits_after_point)).replace(".", ",") + " km\n(" + str(round(distance*1.60934, digits_after_point)) + " miles)"
     result = tk.Label(tkFenster, text=resultText, bg="yellow", fg="dark green").grid(row=4, column=3)
 
     print("Entfernung zwischen",city1,"und",city2,":",distance,"\n")
@@ -90,17 +97,41 @@ def entfernung():
 if __name__ == '__main__':
     df = pd.read_csv(file)
 
-    connection = sqlite3.connect("/Users/nedimdrekovic/Python/DB/simplemaps_worldcities/cities.db", timeout=10)
+    connection = sqlite3.connect("/Users/nedimdrekovic/Python/DB/simplemaps_worldcities/worlddb.db", timeout=10)
     zeiger = connection.cursor()
 
-    sql_file = open(sqlFile, 'r')
+    sql_file = open("/Users/nedimdrekovic/Python/DB/simplemaps_worldcities/Saving.sql", 'r')
     sql_as_string = str(sql_file.read())
     cmds = sql_as_string.split(';')
-    zeiger.execute(cmds[1])    # create table hinzufuegen
+    #print(cmds)
+    zeiger.execute("DROP TABLE IF EXISTS `cities`;")
 
-    cmd = zeiger.execute("Select city From location;")
+    for index, line in enumerate(cmds):
+        if index == 1e4:
+            break
+        try:
+            zeiger.execute(line)
+        except OperationalError:
+            print("Fehler: " + line)
+
+    cmd = zeiger.execute("Select name, country, region From cities;")
     cities = zeiger.fetchall()
-    cities_array = [cmd[0] for cmd in cities]
+    cities = sorted(cities)
+
+    cities_array = []
+    for index, city in enumerate(cities):
+        if index == len(cities)-1:
+            break
+        #if city[0] == '{}':   # city[0] ist hier immer der Name
+        #    cities_array.append(city[0].replace("{", "").replace("}", ""))
+        elif (cities[index][0] == cities[index+1][0]) | (cities[index][0] == cities[index-1][0]): # bedeutet dass 2 Mal die selbe Stadt in der Liste ist und man nun das Land ueberprueft
+            cities_array.append(cities[index][0] + " (" + cities[index][1] + ")")
+        else:   # wenn Stadt nur einmal vorhanden
+            cities_array.append(cities[index][0])
+
+    #cities_array = [city[0].replace("{", "").replace("}", "") for city in cities if city[0] != '']
+    for c in cities_array:
+        print("C:",c)
 
     # Ein Fenster erstellen
     tkFenster = tk.Tk()
@@ -112,8 +143,8 @@ if __name__ == '__main__':
 #    combo1_cities = df["city"].tolist()
 #    combo1_cities = [city if city not in (combo1_cities[:index] + combo1_cities[index+1:]) else (city + " (" + str(df.loc[index, "country"]) + ", " + str(df.loc[index, "admin_name"]) + ")") if (len(df[(df["city"] == city) & (df["country"] == df.iloc[index]["country"])]) >= 2) else (city + " (" + str(df.loc[index, "country"]) + ")") for index, city in enumerate(combo1_cities)] # wenn bis auf city das gleiche element enthalten ist
 
-    combo1 = ttk.Combobox(tkFenster, state="readonly", values=cities_array)
-    combo2 = ttk.Combobox(tkFenster, state="readonly", values=cities_array)
+    combo1 = ttk.Combobox(tkFenster, state="readonly", values=sorted(cities_array))
+    combo2 = ttk.Combobox(tkFenster, state="readonly", values=sorted(cities_array))
     combo1.grid(column=0, row=1, padx=5)
     combo2.grid(column=1, row=1, padx=5)
     combo1.current(1)
