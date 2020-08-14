@@ -40,9 +40,9 @@ def getCity(city):
             land = stadt[1][:-1]
             command_string += " and country = '" + land + "'"
         else:                               # im gleichen Land, also Region vorhanden
+            land = stadt[1].split(',')[0]
             region = stadt[1].split(', ')[1][:-1]
-            command_string += " and country = '" + stadt[1].split(',')[0] + "'"
-            command_string += " and region = '" + region + "'"
+            command_string += " and country = '" + land + "'" + " and region = '" + region + "'"
     zeiger.execute(command_string)
     latitude, longitude = zeiger.fetchone()
     return latitude, longitude
@@ -68,8 +68,8 @@ def entfernung():
     c = 2 * math.atan2(np.sqrt(a), np.sqrt(1 - a))
     distance = radius * c
 
-    l1_text = ("(" + df.loc[df.index[index1], "admin_name"] + ")" if imSelbenLand else "") + "(" + str(round(latitude1, digits_after_point)) + u'\N{DEGREE SIGN}/' + str(round(longitude1, digits_after_point)) + u'\N{DEGREE SIGN}' + ")"
-    l2_text = ("(" + df.loc[df.index[index2], "admin_name"] + ")" if imSelbenLand else "") + "(" + str(round(latitude2, digits_after_point)) + u'\N{DEGREE SIGN}/' + str(round(longitude2, digits_after_point)) + u'\N{DEGREE SIGN}' + ")"
+    l1_text = ("(" + df.loc[df.index[index1], "admin_name"] + ")" if imSelbenLand else "") + "(" + str(round(longitude1, digits_after_point)) + u'\N{DEGREE SIGN}/' + str(round(latitude1, digits_after_point)) + u'\N{DEGREE SIGN}' + ")"
+    l2_text = ("(" + df.loc[df.index[index2], "admin_name"] + ")" if imSelbenLand else "") + "(" + str(round(longitude2, digits_after_point)) + u'\N{DEGREE SIGN}/' + str(round(latitude2, digits_after_point)) + u'\N{DEGREE SIGN}' + ")"
 
     tk.Label(tkFenster, text=l1_text, bg="red", fg="white").grid(row=2, column=3)
     tk.Label(tkFenster, text=l2_text, bg="blue", fg="orange").grid(row=3, column=3)
@@ -80,7 +80,7 @@ def entfernung():
     resultText = str(round(distance, digits_after_point)).replace(".", ",") + " km\n(" + str(round(distance/1.60934, digits_after_point)) + " miles)"
     result = tk.Label(tkFenster, text=resultText, bg="yellow", fg="dark green").grid(row=4, column=3)
 
-    print("Entfernung zwischen",city1,"und",city2,":",distance,"km")
+    print("Entfernung zwischen",city1,"und",city2,":",str(round(distance, digits_after_point)),"km (= " + str(round(distance/1.60934, digits_after_point)) + " miles)")
 
 if __name__ == '__main__':
     connection = sqlite3.connect(db_file, timeout=10)
@@ -96,25 +96,23 @@ if __name__ == '__main__':
         except OperationalError:
             print("Fehler: " + cmds[index])
 
-    zeiger.execute("Select name, country, region From cities;")
+    zeiger.execute("Select name, country, region From cities Where name != '';")
     cities = sorted(zeiger.fetchall())[:n]
 
     cities_array = []
-    staedte = [city[0] for city in cities if city[0] != ""]
+    staedte = [city[0] for city in cities]
     for index, city in enumerate(cities):
-        if index == len(cities)-1:
-            break
-        if city[0] != ''.strip():   # city[0] ist hier immer der Name
-            if staedte.count(city[0]) >= 2: # bedeutet dass 2 Mal die selbe Stadt in der Liste ist und man nun das Land ueberprueft
-                if ((cities[index][0] == cities[index+1][0]) & (cities[index][1] == cities[index+1][1])) | ((cities[index][0] == cities[index-1][0]) & (cities[index][1] == cities[index-1][1])): # Stadt und Land gleich
-                    cities_array.append(cities[index][0] + " (" + cities[index][1] + ", " + cities[index][2] + ")")
-                else:   # Städte sind gleich, Länder aber nicht
-                    cities_array.append(cities[index][0] + " (" + cities[index][1] + ")")
-            else:                   # wenn Stadt nur einmal vorhanden
-                cities_array.append(cities[index][0])
+        if staedte.count(city[0]) >= 2: # bedeutet dass 2 Mal die selbe Stadt in der Liste ist und man nun das Land ueberprueft
+            if ((cities[index][0] == cities[index+1][0]) & (cities[index][1] == cities[index+1][1])) | ((cities[index][0] == cities[index-1][0]) & (cities[index][1] == cities[index-1][1])): # Stadt und Land gleich
+                cities_array.append(cities[index][0] + " (" + cities[index][1] + ", " + cities[index][2] + ")")
+            else:   # Städte sind gleich, Länder aber nicht
+                cities_array.append(cities[index][0] + " (" + cities[index][1] + ")")
+        else:                   # wenn Stadt nur einmal vorhanden
+            cities_array.append(cities[index][0])
 
     # Ein Fenster erstellen
-    tkFenster = tk.Tk()
+    tkFenster = tk.Tk(className='AutocompleteCombobox')
+
     # Den Fenstertitle erstellen
     tkFenster.title("Entfernung zweier Städte (Luftlinie)")
     tkFenster.geometry("1000x225")
@@ -132,7 +130,8 @@ if __name__ == '__main__':
 
     label1 = tk.Label(tkFenster, text="1.Stadt", bg="red", fg="white").grid(row=0, column=0, padx=3)
     label2 = tk.Label(tkFenster, text="2.Stadt", bg="blue", fg="orange").grid(row=0, column=1, padx=3)
-    berechne = ttk.Button(tkFenster, text="Berechne die Entfernung der beiden Städte", command=entfernung).grid(row=1, column=2)
+    berechne = ttk.Button(tkFenster, text="Berechne die Entfernung", command=entfernung).grid(row=1, column=2, padx=3)
+    quit = ttk.Button(tkFenster, text="Schließe die Anwendung", command=tkFenster.quit).grid(row=1, column=3, padx=3)
 
     # In der Ereignisschleife auf Eingabe des Benutzers warten.
     tkFenster.mainloop()
