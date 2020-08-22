@@ -7,7 +7,6 @@ from PIL import Image, ImageTk
 import os
 import sqlite3
 from sqlite3 import OperationalError
-import time
 
 #file = str(os.path.realpath(__file__))
 csv_file = "/Users/nedimdrekovic/Python/DB/simplemaps_worldcities/" + "world_cities.csv"
@@ -68,8 +67,8 @@ def entfernung():
     c = 2 * math.atan2(np.sqrt(a), np.sqrt(1 - a))
     distance = radius * c
 
-    l1_text = ("(" + df.loc[df.index[index1], "admin_name"] + ")" if imSelbenLand else "") + "(" + str(round(longitude1, digits_after_point)) + u'\N{DEGREE SIGN}/' + str(round(latitude1, digits_after_point)) + u'\N{DEGREE SIGN}' + ")"
-    l2_text = ("(" + df.loc[df.index[index2], "admin_name"] + ")" if imSelbenLand else "") + "(" + str(round(longitude2, digits_after_point)) + u'\N{DEGREE SIGN}/' + str(round(latitude2, digits_after_point)) + u'\N{DEGREE SIGN}' + ")"
+    l1_text = "(" + str(round(longitude1, digits_after_point)) + u'\N{DEGREE SIGN}/' + str(round(latitude1, digits_after_point)) + u'\N{DEGREE SIGN}' + ")"
+    l2_text = "(" + str(round(longitude2, digits_after_point)) + u'\N{DEGREE SIGN}/' + str(round(latitude2, digits_after_point)) + u'\N{DEGREE SIGN}' + ")"
 
     tk.Label(tkFenster, text=l1_text, bg="red", fg="white").grid(row=2, column=3)
     tk.Label(tkFenster, text=l2_text, bg="blue", fg="orange").grid(row=3, column=3)
@@ -132,6 +131,7 @@ if __name__ == '__main__':
     label2 = tk.Label(tkFenster, text="2.Stadt", bg="blue", fg="orange").grid(row=0, column=1, padx=3)
     berechne = ttk.Button(tkFenster, text="Berechne die Entfernung", command=entfernung).grid(row=1, column=2, padx=3)
     quit = ttk.Button(tkFenster, text="Schließe die Anwendung", command=tkFenster.quit).grid(row=1, column=3, padx=3)
+
 
     # In der Ereignisschleife auf Eingabe des Benutzers warten.
     tkFenster.mainloop()
